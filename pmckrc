@@ -1,0 +1,26 @@
+# config for poor man's clock (pmck)
+# comments '#' are ignored
+#style; roman numerals 1 or hindu-arabic 0
+style = 1
+# size; px. THIS IS MANDATORY if you use the pmkrc file
+size = 120
+# colours; r,g,b
+#background
+bg_r = 0.6
+bg_g = 0.8
+bg_b = 0.9
+#background decorations
+bd_r = 0.1
+bd_g = 0.1
+bd_b = 0.1
+#big and little hand
+blh_r = 0.3
+blh_g = 0.3
+blh_b = 0.3
+#second hand
+sh_r = 0.0
+sh_g = 0.0
+sh_b = 0.9
+#screen position; MUST fit your screen!
+posx = 1210
+posy = 600
