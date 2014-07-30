@@ -10,7 +10,7 @@ a proof of concept.
 
 Build
 -----
-Just run 'make' and install the pmck the binary in your path. Optionally,
+Just run 'make' and install the pmck binary in your path. Optionally,
 install the pmckrc file to $HOME/.config/ and edit to your preferences. 
 
 Usage
@@ -33,6 +33,7 @@ with any other WM/DE also as it overrides the internal algorithm.
 Bugs
 ----
 - must quit with CTRL-C or kill, there is code block supposed to quit with 'q'.. :(
+(fixed thanks to jamesbond)
 - redraws forever, so may use too much CPU and eventually memory
 - may run 1 or 2 seconds behind system time.
 - need a click on desktop to display (rox bug - FIXED)

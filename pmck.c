@@ -421,7 +421,7 @@ void showxlib(int width, int height, int style, char *xwin) {
     
     /* this block sorts out the desktop window */
     if (xwin) {
-		fprintf(stdout,"xwin is %s",xwin); /* passed param */
+		fprintf(stdout,"xwin is %s\n",xwin); /* passed param */
 		rootwin = strtol(xwin, 0, 0);
 	}else {
 		rootwin = RootWindow(dpy, scr);
@@ -432,7 +432,7 @@ void showxlib(int width, int height, int style, char *xwin) {
 		XWindowAttributes attrib;
 		char *w_ret;
 		XQueryTree(dpy,rootwin,&root_ret,&dad_ret,&kids_ret,&nkids_ret);
-		static char *window_id_format = "0x%lx";
+		static char *window_id_format = "0x%lx\n";
 		int i;
 		const char *rox = "ROX";
 		for (i = 0; i < nkids_ret; i++)	{
@@ -467,32 +467,33 @@ void showxlib(int width, int height, int style, char *xwin) {
 	win = XCreateWindow(dpy, rootwin, posx, posy, width, height, 0, mydepth, 
 			InputOutput, DefaultVisual(dpy, scr), CWOverrideRedirect, &attr);
 	XStoreName(dpy, win, prog);
-	XSelectInput(dpy, win, ExposureMask|KeyPressMask);
+	XSelectInput(dpy, win, ExposureMask|KeyPressMask|ButtonPressMask);
 	XMapWindow(dpy, win);
 	cs = cairo_xlib_surface_create(dpy, win, 
 				DefaultVisual(dpy, scr), width, height);
 	XLowerWindow(dpy, win);
 	XFlush(dpy);
-	while (1) {
-		XNextEvent(dpy, &e);
-		if(e.type == Expose && e.xexpose.count < 1) {
-			while (1) {
-				paint(cs, width, height, style);
-				usleep(500000);
-			}
 		
-		} 
-		else if (e.type == KeyPress) {
-			char buf[128] = {0};
-			KeySym keysym;
-			XLookupString(&e.xkey, buf, sizeof buf, &keysym, NULL);
-			if (keysym == XK_q) {
-				break;
-			}
+	while (1) { 
+		paint(cs, width, height, style); 
+		while (XPending (dpy)) { 
+			XNextEvent(dpy, &e); 
+			if (e.type == KeyPress) { 
+				char buf[128] = {0}; 
+				KeySym keysym; 
+				XLookupString(&e.xkey, buf, sizeof(buf), &keysym, NULL); 
+				if (keysym == XK_q) { 
+				goto finish; 
+				} 
+			} else if (e.type == ButtonPress) { 
+				XSetInputFocus (dpy, win, RevertToNone, CurrentTime); 
+			} 
 		}
-	}
-	cairo_surface_destroy(cs);
-	XCloseDisplay(dpy);
+		usleep(200000); /*reduced as Xpending() takes time */
+	} 
+finish: 
+	cairo_surface_destroy(cs); 
+	XCloseDisplay(dpy); 
 }
 
 /**************** main *******************************************************/
