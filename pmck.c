@@ -3,6 +3,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
+#include <X11/extensions/shape.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -141,7 +142,6 @@ void read_conf() {
 				char *res = split_string(line);
 				posy = atoi(res);
 			}
-			
 		}
 	} else {
 		exit(1);
@@ -187,7 +187,7 @@ float get_secs() {
 	while (1) {
 		if ((secs != 0) && (secs <= 59)){
 			secd = (secs * 6.0) + 180.0;
-		} else if ((secs == 60) || (secs == 61)){ /* special - leap seconds */
+		} else if ((secs == 60) || (secs == 61)){ /* leap seconds */
 			secd = (59 * 6.0) + 180.0;
 		} else if (secs == 0) { 
 			secd = 180.0;
@@ -251,7 +251,8 @@ double degrees2radians(int degrees) {
 void paint_second_hand(cairo_t *cr, int w, int h) { 
 	/** second */
 	get_secs();
-	struct clock_hand *second = clock_hand_create((92 * w/200), 1.0, sh_r, sh_g, sh_b, secd);
+	struct clock_hand *second = clock_hand_create((92 * w/200), 
+										1.0, sh_r, sh_g, sh_b, secd);
 	double degs = degrees2radians(second->angle);
 	cairo_set_source_rgb(cr, second->rr, second->gg, second->bb);
 	cairo_set_line_width(cr, second->wdth);
@@ -264,7 +265,8 @@ void paint_second_hand(cairo_t *cr, int w, int h) {
 void paint_big_hand(cairo_t *cr, int w, int h) {
 	/** minute */
 	get_mins();
-	struct clock_hand *big = clock_hand_create((87 * w/200), w/50, blh_r, blh_g, blh_b, mind);
+	struct clock_hand *big = clock_hand_create((87 * w/200), 
+									w/50, blh_r, blh_g, blh_b, mind);
 	double degs = degrees2radians(big->angle);
 	cairo_set_source_rgb(cr, big->rr, big->gg, big->bb);
 	cairo_set_line_width(cr, big->wdth);
@@ -278,7 +280,8 @@ void paint_big_hand(cairo_t *cr, int w, int h) {
 void paint_little_hand(cairo_t *cr, int w, int h) {
 	/** hour */
 	get_hrs();
-	struct clock_hand *little = clock_hand_create((w/3), w/33, blh_r, blh_g, blh_b, hrd);
+	struct clock_hand *little = clock_hand_create((w/3), 
+							w/33, blh_r, blh_g, blh_b, hrd);
 	double degs = degrees2radians(little->angle);
 	cairo_set_source_rgb(cr, little->rr, little->gg, little->bb);
 	cairo_set_line_width(cr, little->wdth);
@@ -298,6 +301,15 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style) {
 	cairo_set_line_width(cr, 1);  
 	cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
 	cairo_translate(cr, sizex/2, sizey/2);
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 12, 0)
+	if (cairo_version() >= CAIRO_VERSION_ENCODE(1, 12, 0)) {
+		cairo_set_antialias(cr, CAIRO_ANTIALIAS_BEST);
+	} else {
+		cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
+	}
+#else
+	cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
+#endif
 	cairo_arc(cr, 0, 0, rad, 0, 2 * M_PI);
 	cairo_stroke_preserve(cr);
 	cairo_set_source_rgb(cr, bg_r, bg_g, bg_b);
@@ -333,7 +345,8 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style) {
 	cairo_show_text(cr, twelve);
 	cairo_move_to(cr, ((sizex/2) - 4) - shift_six, sizey - (2 * fnt / 5));
 	cairo_show_text(cr, six);
-	cairo_move_to(cr, (sizex - (7 * fnt / 8)) - shift_three, (sizey/2) + (fnt - 10));
+	cairo_move_to(cr, (sizex - (7 * fnt / 8)) - shift_three,
+											(sizey/2) + (fnt - 10));
 	cairo_show_text(cr, three);
 	cairo_move_to(cr, 4, (sizey/2) + (fnt - 10));
 	cairo_show_text(cr, nine);
@@ -371,6 +384,17 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style) {
 		cairo_restore(cr);
 	}
 }
+void paint_dial(cairo_surface_t *cs, int sizex, int sizey, int style) {
+	cairo_t *c;
+	c = cairo_create(cs);
+	
+	/** face */
+	//cairo_save(c);
+	paint_face(c, sizex, sizey, style);
+	//cairo_restore(c);
+	cairo_show_page(c);
+	cairo_destroy(c);
+}
 /** this paints everything and is looped from showxlib() */
 void paint(cairo_surface_t *cs, int sizex, int sizey, int style) {
 	
@@ -406,6 +430,7 @@ void showxlib(int width, int height, int style, char *xwin) {
 	XEvent e;
 	int scr;
 	cairo_surface_t *cs;
+	cairo_surface_t *cw;
 	int mydepth;
     
 	if (!(dpy = XOpenDisplay(NULL))) {
@@ -419,32 +444,83 @@ void showxlib(int width, int height, int style, char *xwin) {
     dpyWidth = DisplayWidth(dpy, scr);
     dpyHeight = DisplayHeight(dpy, scr);
     
-    /* this block sorts out the desktop window */
+    /* this block sorts out the desktop window */ /* needs work */
     if (xwin) {
 		fprintf(stdout,"xwin is %s\n",xwin); /* passed param */
 		rootwin = strtol(xwin, 0, 0);
 	}else {
 		rootwin = RootWindow(dpy, scr);
-	    Window root_ret;
-		Window dad_ret;
-		Window *kids_ret;
-		unsigned int nkids_ret;
+	    Window root_ret, root_kid_ret, root_grkid_ret;
+		Window dad_ret, dad_kid_ret, dad_grkid_ret;
+		Window *kids_ret, *kids_kids_ret, *kids_grkids_ret;
+		unsigned int nkids_ret, nkids_nkids_ret, nkids_grnkids_ret;
 		XWindowAttributes attrib;
-		char *w_ret;
-		XQueryTree(dpy,rootwin,&root_ret,&dad_ret,&kids_ret,&nkids_ret);
+		char *w_ret, *w_kids_ret, *w_grkids_ret;
+		XQueryTree(dpy, rootwin, &root_ret, &dad_ret,
+				&kids_ret, &nkids_ret);
 		static char *window_id_format = "0x%lx\n";
-		int i;
+		int i, j, k; /* "plasma-desktop is 3 deep! (KDE) */
 		const char *rox = "ROX";
+		const char *desk = "Desktop"; /* xfce */
+		const char *plasma = "plasma-desktop";
+		
 		for (i = 0; i < nkids_ret; i++)	{
 			XGetWindowAttributes(dpy, kids_ret[i], &attrib);
 			XFetchName(dpy, kids_ret[i], &w_ret);
 			
-			if (w_ret) {
+			if ((dpyWidth != attrib.width) && 
+					(dpyHeight != attrib.height)) {
+				continue;
+			}
+			if (w_ret != NULL) {
 				if (strncmp(rox,w_ret,3) == 0) {
 					fprintf(stdout,window_id_format, kids_ret[i]);
 					rootwin = kids_ret[i];
 					break;
 				}
+			}
+			XQueryTree(dpy, kids_ret[i], &root_kid_ret, 
+					&dad_kid_ret, &kids_kids_ret, &nkids_nkids_ret);
+			for (j = 0; j < nkids_nkids_ret; j++) {
+				XGetWindowAttributes(dpy, kids_kids_ret[j], &attrib);
+				XFetchName(dpy, kids_kids_ret[j], &w_kids_ret);
+				
+				if ((dpyWidth != attrib.width) && 
+							(dpyHeight != attrib.height)) {
+					continue;
+				}
+				if (w_kids_ret != NULL) {
+					if ((strcmp(desk,w_kids_ret) == 0) || 
+							(strncmp(rox,w_kids_ret,3) == 0) ||
+							(strcmp(plasma,w_kids_ret) == 0)) {
+						fprintf(stdout, window_id_format, 
+									kids_kids_ret[j]);
+						rootwin = kids_kids_ret[j];
+						break;
+					} 
+				}
+				XQueryTree(dpy, kids_kids_ret[j], &root_grkid_ret, 
+						&dad_grkid_ret, &kids_grkids_ret, 
+						&nkids_grnkids_ret);
+				for (k = 0; k < nkids_grnkids_ret; k++) {
+					XGetWindowAttributes(dpy, 
+							kids_grkids_ret[k], &attrib);
+					XFetchName(dpy, kids_grkids_ret[k], &w_grkids_ret);
+					if ((dpyWidth != attrib.width) && 
+							(dpyHeight != attrib.height)) {
+						continue;
+					}
+					if ((w_grkids_ret != NULL) && (i <= 2)){
+						if (strcmp(plasma,w_grkids_ret) == 0) {
+							fprintf(stdout, window_id_format, 
+										kids_grkids_ret[k]);
+							rootwin = kids_grkids_ret[k];
+							break;
+						}
+					}
+					XFree(w_grkids_ret);
+				} 
+				XFree(w_kids_ret);
 			}
 			XFree(w_ret);
 		}
@@ -457,11 +533,11 @@ void showxlib(int width, int height, int style, char *xwin) {
 	if ((posx == 0) && (posy == 0)){
 		posx = dpyWidth - (width + 50); /* default at top right */
 		posy = 50;
-	} else {
-		if ((posx > (dpyWidth - width)) || (posy > (dpyHeight - height))) {
-			fprintf(stderr,"%dx or %dy is too big for your screen\n", posx, posy);
+	} 
+	else if ((posx > (dpyWidth - width)) || (posy > (dpyHeight - height))) {
+			fprintf(stderr,"%dx or %dy is too big for your screen\n", 
+															posx, posy);
 			exit(1);
-		}
 	}
 	
 	win = XCreateWindow(dpy, rootwin, posx, posy, width, height, 0, mydepth, 
@@ -469,13 +545,26 @@ void showxlib(int width, int height, int style, char *xwin) {
 	XStoreName(dpy, win, prog);
 	XSelectInput(dpy, win, ExposureMask|KeyPressMask|ButtonPressMask);
 	XMapWindow(dpy, win);
+	Pixmap pix = XCreatePixmap(dpy, win, width, height, 1);
 	cs = cairo_xlib_surface_create(dpy, win, 
 				DefaultVisual(dpy, scr), width, height);
+	cw = cairo_xlib_surface_create_for_bitmap(dpy, pix, 
+                DefaultScreenOfDisplay(dpy), width, height);
+    cairo_surface_t *csbuf = cairo_image_surface_create 
+							(CAIRO_FORMAT_ARGB32, width, height);             
+	cairo_t *cspaint = cairo_create (cs); 
+	cairo_set_source_surface (cspaint, csbuf, 0, 0);             
+    
+    paint_dial(cw, width, height, style); /* only paints face */
+	XShapeCombineMask(dpy, win, ShapeBounding, 0, 0, 
+				cairo_xlib_surface_get_drawable(cw), ShapeSet); 
+				
 	XLowerWindow(dpy, win);
 	XFlush(dpy);
-		
-	while (1) { 
-		paint(cs, width, height, style); 
+	int run = 1;
+	while (run) { 
+		paint(csbuf, width, height, style); 
+		cairo_paint (cspaint); 
 		while (XPending (dpy)) { 
 			XNextEvent(dpy, &e); 
 			if (e.type == KeyPress) { 
@@ -483,16 +572,18 @@ void showxlib(int width, int height, int style, char *xwin) {
 				KeySym keysym; 
 				XLookupString(&e.xkey, buf, sizeof(buf), &keysym, NULL); 
 				if (keysym == XK_q) { 
-				goto finish; 
+					run = 0;
+					break;
 				} 
 			} else if (e.type == ButtonPress) { 
 				XSetInputFocus (dpy, win, RevertToNone, CurrentTime); 
 			} 
 		}
-		usleep(200000); /*reduced as Xpending() takes time */
+		usleep(400000); /*reduced as XPending() takes time */
+		
 	} 
-finish: 
-	cairo_surface_destroy(cs); 
+	cairo_surface_destroy(cs);
+	XFreePixmap(dpy, pix); 
 	XCloseDisplay(dpy); 
 }
 
