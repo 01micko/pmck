@@ -1,5 +1,5 @@
 CFLAGS=-Wall -pedantic -std=gnu99 -g -I/usr/include `pkg-config --cflags cairo`
-LDFLAGS=-Wall -g `pkg-config --libs cairo` -L/usr/lib -lX11
+LDFLAGS=-Wall -g `pkg-config --libs cairo` -L/usr/lib -lX11 -lXext
 
 all: pmck
 
