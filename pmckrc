@@ -24,3 +24,10 @@ sh_b = 0.9
 #screen position; MUST fit your screen!
 posx = 1210
 posy = 600
+#antialias
+#NOTE: if you have cairo < 1.12.0 you can not use
+#CAIRO_ANTIALIAS_GOOD = 4, CAIRO_ANTIALIAS_BEST = 6, CAIRO_ANTIALIAS_FAST = 5,
+#others are CAIRO_ANTIALIAS_DEFAULT =0, CAIRO_ANTIALIAS_NONE = 1, 
+#CAIRO_ANTIALIAS_GRAY = 2, CAIRO_ANTIALIAS_SUBPIXEL = 3
+#if blank CAIRO_ANTIALIAS_DEFAULT is used
+AA = 3
