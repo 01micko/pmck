@@ -1,5 +1,6 @@
 #include <cairo.h>
 #include <cairo-xlib.h>
+#include <cairo-xlib-xrender.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
@@ -49,6 +50,7 @@ double blh_b = 0.8;
 double sh_r = 1.0;
 double sh_g = 0.0;
 double sh_b = 0.0;
+int AA = 0; /* CAIRO_ANTIALIAS_DEFAULT */
 
 static int test_conf() {
 	home = getenv("HOME");
@@ -141,6 +143,10 @@ void read_conf() {
 			else if (strstr(line, "posy") != NULL) {
 				char *res = split_string(line);
 				posy = atoi(res);
+			}
+			else if (strstr(line, "AA") != NULL) {
+				char *res = split_string(line);
+				AA = atoi(res);
 			}
 		}
 	} else {
@@ -301,15 +307,7 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style) {
 	cairo_set_line_width(cr, 1);  
 	cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
 	cairo_translate(cr, sizex/2, sizey/2);
-#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 12, 0)
-	if (cairo_version() >= CAIRO_VERSION_ENCODE(1, 12, 0)) {
-		cairo_set_antialias(cr, CAIRO_ANTIALIAS_BEST);
-	} else {
-		cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
-	}
-#else
-	cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
-#endif
+	cairo_set_antialias(cr, AA);
 	cairo_arc(cr, 0, 0, rad, 0, 2 * M_PI);
 	cairo_stroke_preserve(cr);
 	cairo_set_source_rgb(cr, bg_r, bg_g, bg_b);
@@ -546,12 +544,18 @@ void showxlib(int width, int height, int style, char *xwin) {
 	XSelectInput(dpy, win, ExposureMask|KeyPressMask|ButtonPressMask);
 	XMapWindow(dpy, win);
 	Pixmap pix = XCreatePixmap(dpy, win, width, height, 1);
+	GC gc_pix = XCreateGC(dpy, pix, 0, 0);
+	XFillRectangle (dpy, pix, gc_pix, 0, 0, width, height); 
+	XRenderPictFormat *fmtcs;
 	cs = cairo_xlib_surface_create(dpy, win, 
 				DefaultVisual(dpy, scr), width, height);
+	fmtcs = cairo_xlib_surface_get_xrender_format(cs);
+	cs = cairo_xlib_surface_create_with_xrender_format(dpy, win,
+		DefaultScreenOfDisplay(dpy), fmtcs, width, height);
 	cw = cairo_xlib_surface_create_for_bitmap(dpy, pix, 
                 DefaultScreenOfDisplay(dpy), width, height);
     cairo_surface_t *csbuf = cairo_image_surface_create 
-							(CAIRO_FORMAT_ARGB32, width, height);             
+							(CAIRO_FORMAT_ARGB32, width, height);
 	cairo_t *cspaint = cairo_create (cs); 
 	cairo_set_source_surface (cspaint, csbuf, 0, 0);             
     
@@ -579,7 +583,7 @@ void showxlib(int width, int height, int style, char *xwin) {
 				XSetInputFocus (dpy, win, RevertToNone, CurrentTime); 
 			} 
 		}
-		usleep(400000); /*reduced as XPending() takes time */
+		usleep(950000); /* increased now that drawing is efficient */
 		
 	} 
 	cairo_surface_destroy(cs);
