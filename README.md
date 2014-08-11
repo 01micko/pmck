@@ -28,16 +28,20 @@ case of XFCE I had trouble coding the correct window so added 1 single option to
 command line; the desktop window ID which can be found by running "xwininfo" and 
 clicking on a blank part of the desktop. The string will be a hex value something 
 like "0xae44010". Just type (or script) "pmck $hex_value_here". This should work 
-with any other WM/DE also as it overrides the internal algorithm.
+with any other WM/DE also as it overrides the internal algorithm. 
+- As of commit d04dd10862301ec20413654509c601863e9e95ab ROX detection is fixed 
+and KDE and xfce have been fixed.
 
 Bugs
 ----
-- must quit with CTRL-C or kill, there is code block supposed to quit with 'q'.. :(
+- must quit with CTRL-C or kill, there is code block supposed to quit with 'q'.. :( 
 (fixed thanks to jamesbond)
-- redraws forever, so may use too much CPU and eventually memory
+- redraws forever, so may use too much CPU and eventually memory (improved)
 - may run 1 or 2 seconds behind system time.
 - need a click on desktop to display (rox bug - FIXED)
-- some window managers may need the the window on top for the clock to display
+- some window managers may need the the window on top for the clock to display 
+(this has been vastly improved)
 - can flicker at times of heavy load or on slow machines
-- a compositor such as xcompmgr is needed so artefacts do not display under clockface
+- a compositor such as xcompmgr is needed so artefacts do not display under clockface 
+(this has been improved but minor artefacts still show when a compositor is not running. Needs work.)
 - at larger sizes the second hand may flicker or disappear
