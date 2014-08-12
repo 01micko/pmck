@@ -12,7 +12,10 @@ Build
 -----
 Just run 'make' and install the pmck binary in your path. Optionally,
 install the pmckrc file to $HOME/.config/ and edit to your preferences.
-Strip the binary if you wish with _strip --strip-unneeded pmck_ 
+Strip the binary if you wish with 
+```
+strip --strip-unneeded pmck
+```
 
 Usage
 -----
