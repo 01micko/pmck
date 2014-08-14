@@ -59,6 +59,7 @@ static int test_conf() {
 	if ( fp == NULL ) {
 		return 1;
 	}
+	fclose(fp);
 	return 0;
 }
 char *split_string(char *var) {
