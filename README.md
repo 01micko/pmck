@@ -6,7 +6,7 @@ a poor man's clock
 This is a simple analog clock based on xlib and cairo.
 
 This is not meant for production systems as it has bugs and was written just as
-a proof of concept.
+a proof of concept. However, most bugs are now fixed.
 
 Build
 -----
@@ -48,5 +48,5 @@ Bugs
 - can flicker at times of heavy load or on slow machines (mostly fixed, reduced cpu usage)
 - a compositor such as xcompmgr is needed so artefacts do not display under clockface 
 (this has been improved but minor artefacts still show when a compositor is not running. Needs work. EDIT: fixed!)
-- at larger sizes the second hand may flicker or disappear
-- may have jagged edges which may or may not be improved with an antialias setting in pmckrc. Needs work on the XRender routine.
+- at larger sizes the second hand may flicker or disappear (fixed)
+- may have jagged edges which may or may not be improved with an antialias setting in pmckrc. (fixed)
