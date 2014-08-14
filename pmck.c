@@ -298,19 +298,29 @@ void paint_little_hand(cairo_t *cr, int w, int h) {
 	cairo_stroke(cr);
 	clock_hand_destroy(little);
 }
-void paint_face(cairo_t *cr, int sizex, int sizey, int style) {
-	int fnt = 13;
-	if (sizex > 180) fnt = 18;
+void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
+	/* ctype determines who called here */
+	sizex = sizex - 2;
+	sizey = sizey - 2;
+	int fnt = sizex / 10; /* font size */
 	/** background */
 	int rad = (sizex/2) - 2;
 	cairo_save(cr);
-	cairo_set_line_width(cr, 1);  
-	cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+	cairo_set_line_width(cr, sizex / 60);  
+	if (ctype == 0) {
+		cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
+	} else {
+		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	}
 	cairo_translate(cr, sizex/2, sizey/2);
 	cairo_set_antialias(cr, AA);
 	cairo_arc(cr, 0, 0, rad, 0, 2 * M_PI);
 	cairo_stroke_preserve(cr);
-	cairo_set_source_rgb(cr, bg_r, bg_g, bg_b);
+	if (ctype == 0) {
+		cairo_set_source_rgb(cr, bg_r, bg_g, bg_b);
+	} else {
+		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	}
 	cairo_fill(cr);
 	cairo_restore(cr);
 	
@@ -318,11 +328,12 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style) {
 	char *fface; /* a bit of glam for different styles */
 	fface = "DejaVu Sans";
 	char *twelve, *six, *nine, *three;
-	int shift_six, shift_three;
+	int shift_twlv, shift_six, shift_three;
 	twelve = "12";
 	six = "6";
 	nine = "9";
 	three = "3";
+	shift_twlv = 0;
 	shift_six = 0;
 	shift_three = 0;
 	if (style == 1) {
@@ -331,52 +342,62 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style) {
 		six = "VI";
 		nine = "IX";
 		three = "III";
-		shift_six = 4;
-		shift_three = 7;
+		shift_twlv = fnt / 9;
+		shift_six = fnt / 3;
+		shift_three = 2 * fnt / 3;
 	}
 	/* print the numerals */
 	cairo_select_font_face(cr, fface, CAIRO_FONT_SLANT_NORMAL,
 			CAIRO_FONT_WEIGHT_NORMAL);
 	cairo_set_font_size(cr, fnt);
-	cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
-	cairo_move_to(cr, (sizex/2) - (3 * fnt / 5), fnt);
+	if (ctype == 0) {
+		cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
+	} else {
+		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	}
+	cairo_move_to(cr, (sizex/2) - (3 * fnt / 5) - shift_twlv, fnt);
 	cairo_show_text(cr, twelve);
-	cairo_move_to(cr, ((sizex/2) - 4) - shift_six, sizey - (2 * fnt / 5));
+	cairo_move_to(cr, ((sizex/2) - (fnt / 3)) - shift_six, sizey - (4 * fnt / 13));
 	cairo_show_text(cr, six);
 	cairo_move_to(cr, (sizex - (7 * fnt / 8)) - shift_three,
-											(sizey/2) + (fnt - 10));
+											(sizey/2) + (4 * fnt / 11));
 	cairo_show_text(cr, three);
-	cairo_move_to(cr, 4, (sizey/2) + (fnt - 10));
+	cairo_move_to(cr, fnt / 4, (sizey/2) + (4 * fnt / 11));
 	cairo_show_text(cr, nine);
 	
 	/** clock face markings */
-	const double d[] = {5.0};
-	const double e[] = {2.0};
 	cairo_translate(cr, sizex/2, sizey/2);
 	int f = 0; /* initialise */
 	for (f = 1; f < 60; f++) {
 		int degrees = f * 6;
 		cairo_save(cr);
-		if ((f == 15) || (f == 30) || (f == 45)) {
+		if ((f == 15) || (f == 30) || (f == 45) ||
+									(f == 29) || (f == 31)){
 			continue;
 		} else if ((f == 5) || (f == 10) || (f == 20) || (f == 25) ||
 				(f == 35) || (f == 40) || (f == 50) || (f == 55)) {
 			double drgs = degrees2radians(degrees);
-			cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
-			cairo_set_line_width(cr, 2.0);
-			cairo_set_dash (cr, d, 1, 0);
+			if (ctype == 0) {
+				cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
+			} else {
+				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+			}
+			cairo_set_line_width(cr, sizex / 40);
 			cairo_rotate(cr, drgs); /* angle */
-			cairo_move_to(cr, 0, sizex/2 - 9);
-			cairo_line_to(cr, 0, (sizex/2) - 4);
+			cairo_move_to(cr, 0, (sizex/2) - (sizex/15));
+			cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
 			cairo_stroke(cr);
 		} else {
 			double drgs = degrees2radians(degrees);
-			cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
-			cairo_set_line_width(cr, 1);
-			cairo_set_dash (cr, e, 1, 0);
+			if (ctype == 0) {
+				cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
+			} else {
+				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+			}
+			cairo_set_line_width(cr, sizex / 80);
 			cairo_rotate(cr, drgs); /* angle */
-			cairo_move_to(cr, 0, sizex/2 - 7);
-			cairo_line_to(cr, 0, (sizex/2) - 4);
+			cairo_move_to(cr, 0, (sizex/2) - (sizex/20));
+			cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
 			cairo_stroke(cr);
 		}
 		cairo_restore(cr);
@@ -387,9 +408,7 @@ void paint_dial(cairo_surface_t *cs, int sizex, int sizey, int style) {
 	c = cairo_create(cs);
 	
 	/** face */
-	//cairo_save(c);
-	paint_face(c, sizex, sizey, style);
-	//cairo_restore(c);
+	paint_face(c, sizex, sizey, style, 1);
 	cairo_show_page(c);
 	cairo_destroy(c);
 }
@@ -401,7 +420,7 @@ void paint(cairo_surface_t *cs, int sizex, int sizey, int style) {
 	
 	/** face */
 	cairo_save(c);
-	paint_face(c, sizex, sizey, style);
+	paint_face(c, sizex, sizey, style, 0);
 	cairo_restore(c);
 	/** hands */
 	/** big */
@@ -442,7 +461,7 @@ void showxlib(int width, int height, int style, char *xwin) {
     dpyWidth = DisplayWidth(dpy, scr);
     dpyHeight = DisplayHeight(dpy, scr);
     
-    /* this block sorts out the desktop window */ /* needs work */
+    /* this block sorts out the desktop window */
     if (xwin) {
 		fprintf(stdout,"xwin is %s\n",xwin); /* passed param */
 		rootwin = strtol(xwin, 0, 0);
@@ -604,7 +623,7 @@ int main(int argc, char **argv) {
 		size = 128;
 	} else {
 		read_conf();
-		if ((size >= 320) || (size < 80)) {
+		if ((size > 320) || (size < 80)) {
 			fprintf(stderr,"Insane entry, %d must be < 320 or > 80\n",size);
 			return 1;
 		}
