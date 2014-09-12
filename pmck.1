@@ -1,0 +1,43 @@
+.TH PMCK 1 "12 September 2014"
+.SH NAME
+pmck \- a poor man's clock
+.SH SYNOPSIS
+\fBpmck\fP [ \frroot window\fP ]
+.SH DESCRIPTION
+\fBpmck\fP displays a desktop analog
+clock \fIXwindow\fP on your screen at 
+the specified position according to the \fBpmckrc\fP
+.SS Options
+.TP
+[\fBroot window\fP ]\fP
+This option is only useful if you run \fIpmck\fP and the clock
+does not appear on your desktop. You may obtain the Window id
+with \fIxwininfo\fP. It is a hex value such as 0x400066, so the command
+would be \fBpmck 0x400066\fP.
+.TP
+There are no other command line options however a \fIpmckrc\fP file in
+\fIXDG_CONFIG_HOME\fP may be used to control position, size and colour
+of the desktop clock. A sample \fIpmckrc\fP is at \fI/usr/share/pmck/pmckrc\fP
+.TP
+To quit the clock, click on it's face and press \fIQ\fP
+.SH FILES
+.TP
+\fI/usr/bin/pmck\fR
+.TP
+\fI/usr/share/pmckrc\fR
+.SH "SEE ALSO"
+xwininfo(5)
+.SH BUGS
+.TP
+May not redraw fast when covered by another window.
+.TP
+May skip seconds however will catch up.
+.SH "AUTHOR"
+.IX Header "AUTHOR"
+Michael Amadio - 01micko@gmail.com
+.SH "COPYRIGHT AND LICENSE"
+.IX Header "COPYRIGHT AND LICENSE"
+\&\fBCopyright (C)\fR 2014 by Author.  
+.PP
+\&\fBpmck\fR is free software; you can redistribute it and/or modify it
+under the terms of the \s-1GPL-v2.0\s0.
