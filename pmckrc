@@ -1,33 +1,35 @@
 # config for poor man's clock (pmck)
 # comments '#' are ignored
-#style; roman numerals 1 or hindu-arabic 0
-style = 1
+#style; hindu-arabic 0, roman numerals 1 or 2 strokes instead of numerals
+style = 2
 # size; px. THIS IS MANDATORY if you use the pmkrc file
-size = 120
-# colours; r,g,b
+# must be <= 300 or >= 80
+size = 128
+# COLORS; r,g,b
 #background
-bg_r = 0.6
-bg_g = 0.8
-bg_b = 0.9
+bg_r = 0.3
+bg_g = 0.3
+bg_b = 0.3
 #background decorations
-bd_r = 0.1
-bd_g = 0.1
-bd_b = 0.1
+bd_r = 0.9
+bd_g = 0.9
+bd_b = 0.9
 #big and little hand
-blh_r = 0.3
-blh_g = 0.3
-blh_b = 0.3
+blh_r = 0.8
+blh_g = 0.8
+blh_b = 0.5
 #second hand
-sh_r = 0.0
+sh_r = 0.8
 sh_g = 0.0
-sh_b = 0.9
+sh_b = 0.0
+# END COLORS
 #screen position; MUST fit your screen!
-posx = 1210
-posy = 600
+posx = 800
+posy = 500
 #antialias
 #NOTE: if you have cairo < 1.12.0 you can not use
 #CAIRO_ANTIALIAS_GOOD = 4, CAIRO_ANTIALIAS_BEST = 6, CAIRO_ANTIALIAS_FAST = 5,
 #others are CAIRO_ANTIALIAS_DEFAULT =0, CAIRO_ANTIALIAS_NONE = 1, 
 #CAIRO_ANTIALIAS_GRAY = 2, CAIRO_ANTIALIAS_SUBPIXEL = 3
 #if blank CAIRO_ANTIALIAS_DEFAULT is used
-AA = 3
+AA = 0
