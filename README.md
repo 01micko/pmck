@@ -28,6 +28,7 @@ make install
 
 Some basic options to `configure` are provided. Run `configure --help`
 
+You will have to manually move `pmckrc` to `$XDG_CONFIG_HOME` for it to be recognised.
 
 Usage
 -----
@@ -43,7 +44,7 @@ is "ROX-Pinboard", which in most cases is the very first child. To address this
 limitation I have added code to find the true *desktop*. `pmck` now comes
 with a header file `pmdesktop.h` with the funtion in `pmdesktop.c`. In the future
 a shared library named `libpmdesktop.so` with it's static counterpart `libpmdesktop.a`
-will become available. As time permits I will utilise this library for othe projects.
+will become available. As time permits I will utilise this library for other projects.
 So far this is tested with *JWM*, *JWM + ROX-Filer*, *Fluxbox*, *XFCE*, 
 *WindowMaker* and *KDE*.
 
@@ -52,8 +53,6 @@ command line; the desktop window ID which can be found by running `xwininfo` and
 clicking on a blank part of the desktop. The string will be a hex value something 
 like `0x400066`. Just type (or script) `pmck $hex_value_here`. This should work 
 with any other WM/DE also as it overrides the internal algorithm. 
-- As of commit d04dd10862301ec20413654509c601863e9e95ab ROX detection is fixed 
-and KDE and xfce have been fixed. Also tested in fluxbox and WindowMaker.
 
 Extra notes
 -----------
@@ -67,5 +66,6 @@ Bugs
 - may run 1 or 2 seconds behind system time and skip a second to catch up
 - can flicker at times of heavy load or on slow machines
 - may have jagged edges which may or may not be improved with an antialias setting in pmckrc.
+- may ne slow to refresh after being uncovered by another window (less than 1 second)
 
 Please report all bugs here for now.
