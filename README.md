@@ -3,7 +3,7 @@ pmck
 
 a poor man's clock
 
-This is a simple analog clock based on xlib and cairo.
+This is a simple analog clock for Linux/UNIX based on xlib and cairo.
 
 
 Build
