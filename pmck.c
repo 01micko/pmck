@@ -12,8 +12,13 @@
 #include <math.h>
 #include <assert.h>
 #include <time.h>
+#ifdef _SHARED_BUILD
+	#include <pmdesktop.h>
+#else
+	#include "pmdesktop.h"
+#endif /* _SHARED_BUILD */
 
-#define THIS_VERSION "0.1"
+#define THIS_VERSION "0.2"
 #define _GNU_SOURCE
 #define CONFIG ".config/pmckrc"
 
@@ -264,8 +269,8 @@ void paint_second_hand(cairo_t *cr, int w, int h) {
 	cairo_set_source_rgb(cr, second->rr, second->gg, second->bb);
 	cairo_set_line_width(cr, second->wdth);
 	cairo_rotate(cr, degs); /* angle */
-	cairo_move_to(cr, 0, 0.5);
-	cairo_line_to(cr, 0, second->lgth + 0.5);
+	cairo_move_to(cr, 0, -(second->lgth / 4));
+	cairo_line_to(cr, 0, second->lgth);
 	cairo_stroke(cr);
 	clock_hand_destroy(second);
 }
@@ -282,6 +287,7 @@ void paint_big_hand(cairo_t *cr, int w, int h) {
 	cairo_line_to(cr, 0, big->lgth);
 	cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
 	cairo_stroke(cr);
+	cairo_arc(cr, 0, 0, w/60, 0, 2 * M_PI);
 	clock_hand_destroy(big);
 }
 void paint_little_hand(cairo_t *cr, int w, int h) {
@@ -303,6 +309,7 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 	/* ctype determines who called here */
 	sizex = sizex - 2;
 	sizey = sizey - 2;
+	double drgs;
 	int fnt = sizex / 10; /* font size */
 	/** background */
 	int rad = (sizex/2) - 2;
@@ -323,6 +330,14 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	}
 	cairo_fill(cr);
+	if (style == 1) {
+		if (ctype == 0) {
+			cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
+		} else {
+			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+		}
+		cairo_arc(cr, 0, 0, (3 * rad / 4), 0, 2 * M_PI);
+	}
 	cairo_restore(cr);
 	
 	/** clock face numerals */
@@ -345,51 +360,105 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 		three = "III";
 		shift_twlv = fnt / 9;
 		shift_six = fnt / 3;
-		shift_three = 2 * fnt / 3;
+		shift_three = 1 * fnt / 2;
 	}
 	/* print the numerals */
-	cairo_select_font_face(cr, fface, CAIRO_FONT_SLANT_NORMAL,
-			CAIRO_FONT_WEIGHT_NORMAL);
-	cairo_set_font_size(cr, fnt);
+	if (style != 2) {
+		cairo_select_font_face(cr, fface, CAIRO_FONT_SLANT_NORMAL,
+				CAIRO_FONT_WEIGHT_NORMAL);
+		cairo_set_font_size(cr, fnt);
+	}
 	if (ctype == 0) {
 		cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
 	} else {
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	}
-	cairo_move_to(cr, (sizex/2) - (3 * fnt / 5) - shift_twlv, fnt);
-	cairo_show_text(cr, twelve);
-	cairo_move_to(cr, ((sizex/2) - (fnt / 3)) - shift_six, sizey - (4 * fnt / 13));
-	cairo_show_text(cr, six);
-	cairo_move_to(cr, (sizex - (7 * fnt / 8)) - shift_three,
-											(sizey/2) + (4 * fnt / 11));
-	cairo_show_text(cr, three);
-	cairo_move_to(cr, fnt / 4, (sizey/2) + (4 * fnt / 11));
-	cairo_show_text(cr, nine);
-	
+	if (style != 2) {
+		cairo_move_to(cr, (sizex/2) - (3 * fnt / 5) - shift_twlv, fnt);
+		cairo_show_text(cr, twelve);
+		cairo_move_to(cr, 
+			((sizex/2) - (fnt / 3)) - shift_six, sizey - (4 * fnt / 13));
+		cairo_show_text(cr, six);
+		cairo_move_to(cr, (sizex - (7 * fnt / 8)) - shift_three,
+												(sizey/2) + (4 * fnt / 11));
+		cairo_show_text(cr, three);
+		cairo_move_to(cr, fnt / 4, (sizey/2) + (4 * fnt / 11));
+		cairo_show_text(cr, nine);
+	} else {
+		cairo_translate(cr, sizex/2, sizey/2);
+		int g;
+		for (g = 0; g < 46; g++) {
+			int degrees = g * 6;
+			cairo_save(cr);
+			if ((g == 15) || (g == 45) || (g == 0)) {
+				drgs = degrees2radians(degrees);
+				if (ctype == 0) {
+					cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
+				} else {
+					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+				}
+				cairo_set_line_width(cr, sizex / 50);
+				cairo_rotate(cr, drgs); /* angle */
+				cairo_move_to(cr, 0, (sizex/2) - (sizex/7));
+				cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
+				cairo_stroke(cr);
+			} else if (g == 30) {
+				drgs = degrees2radians(degrees);
+				if (ctype == 0) {
+					cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
+				} else {
+					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+				}
+				cairo_set_line_width(cr, sizex / 20);
+				cairo_rotate(cr, drgs); /* angle */
+				cairo_move_to(cr, 0, (sizex/2) - (sizex/7));
+				cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
+				cairo_stroke(cr);
+				if (ctype == 0) {
+					cairo_set_source_rgb(cr, bg_r, bg_g, bg_b);
+				} else {
+					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+				}
+				cairo_set_line_width(cr, sizex / 80);
+				cairo_rotate(cr, (drgs)); /* opposite, so do it twice */
+				cairo_rotate(cr, (drgs)); 
+				cairo_move_to(cr, 0, (sizex/2) - (sizex/7));
+				cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
+				cairo_stroke(cr);
+			}
+			cairo_restore(cr);
+		}
+	}
 	/** clock face markings */
-	cairo_translate(cr, sizex/2, sizey/2);
+	int xint, yint;
+	if (style != 2) {
+		cairo_translate(cr, sizex/2, sizey/2);
+		xint = 29;
+		yint = 31;
+	}
 	int f = 0; /* initialise */
-	for (f = 1; f < 60; f++) {
+	for (f = 0; f < 60; f++) {
 		int degrees = f * 6;
 		cairo_save(cr);
-		if ((f == 15) || (f == 30) || (f == 45) ||
-									(f == 29) || (f == 31)){
+		if (((f == 15) || (f == 30) || (f == 45) ||
+					(f == xint) || (f == yint) || (f == 0))) {
 			continue;
-		} else if ((f == 5) || (f == 10) || (f == 20) || (f == 25) ||
+		} 
+		else if ((f == 5) || (f == 10) || (f == 20) || (f == 25) ||
 				(f == 35) || (f == 40) || (f == 50) || (f == 55)) {
-			double drgs = degrees2radians(degrees);
+			drgs = degrees2radians(degrees);
 			if (ctype == 0) {
 				cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
 			} else {
 				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 			}
-			cairo_set_line_width(cr, sizex / 40);
+			cairo_set_line_width(cr, sizex / 50);
 			cairo_rotate(cr, drgs); /* angle */
 			cairo_move_to(cr, 0, (sizex/2) - (sizex/15));
 			cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
 			cairo_stroke(cr);
 		} else {
-			double drgs = degrees2radians(degrees);
+			drgs = degrees2radians(degrees);
 			if (ctype == 0) {
 				cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
 			} else {
@@ -467,81 +536,8 @@ void showxlib(int width, int height, int style, char *xwin) {
 		fprintf(stdout,"xwin is %s\n",xwin); /* passed param */
 		rootwin = strtol(xwin, 0, 0);
 	}else {
-		rootwin = RootWindow(dpy, scr);
-	    Window root_ret, root_kid_ret, root_grkid_ret;
-		Window dad_ret, dad_kid_ret, dad_grkid_ret;
-		Window *kids_ret, *kids_kids_ret, *kids_grkids_ret;
-		unsigned int nkids_ret, nkids_nkids_ret, nkids_grnkids_ret;
-		XWindowAttributes attrib;
-		char *w_ret, *w_kids_ret, *w_grkids_ret;
-		XQueryTree(dpy, rootwin, &root_ret, &dad_ret,
-				&kids_ret, &nkids_ret);
-		static char *window_id_format = "0x%lx\n";
-		int i, j, k; /* "plasma-desktop is 3 deep! (KDE) */
-		const char *rox = "ROX";
-		const char *desk = "Desktop"; /* xfce */
-		const char *plasma = "plasma-desktop";
-		
-		for (i = 0; i < nkids_ret; i++)	{
-			XGetWindowAttributes(dpy, kids_ret[i], &attrib);
-			XFetchName(dpy, kids_ret[i], &w_ret);
-			
-			if ((dpyWidth != attrib.width) && 
-					(dpyHeight != attrib.height)) {
-				continue;
-			}
-			if (w_ret != NULL) {
-				if (strncmp(rox,w_ret,3) == 0) {
-					fprintf(stdout,window_id_format, kids_ret[i]);
-					rootwin = kids_ret[i];
-					break;
-				}
-			}
-			XQueryTree(dpy, kids_ret[i], &root_kid_ret, 
-					&dad_kid_ret, &kids_kids_ret, &nkids_nkids_ret);
-			for (j = 0; j < nkids_nkids_ret; j++) {
-				XGetWindowAttributes(dpy, kids_kids_ret[j], &attrib);
-				XFetchName(dpy, kids_kids_ret[j], &w_kids_ret);
-				
-				if ((dpyWidth != attrib.width) && 
-							(dpyHeight != attrib.height)) {
-					continue;
-				}
-				if (w_kids_ret != NULL) {
-					if ((strcmp(desk,w_kids_ret) == 0) || 
-							(strncmp(rox,w_kids_ret,3) == 0) ||
-							(strcmp(plasma,w_kids_ret) == 0)) {
-						fprintf(stdout, window_id_format, 
-									kids_kids_ret[j]);
-						rootwin = kids_kids_ret[j];
-						break;
-					} 
-				}
-				XQueryTree(dpy, kids_kids_ret[j], &root_grkid_ret, 
-						&dad_grkid_ret, &kids_grkids_ret, 
-						&nkids_grnkids_ret);
-				for (k = 0; k < nkids_grnkids_ret; k++) {
-					XGetWindowAttributes(dpy, 
-							kids_grkids_ret[k], &attrib);
-					XFetchName(dpy, kids_grkids_ret[k], &w_grkids_ret);
-					if ((dpyWidth != attrib.width) && 
-							(dpyHeight != attrib.height)) {
-						continue;
-					}
-					if ((w_grkids_ret != NULL) && (i <= 2)){
-						if (strcmp(plasma,w_grkids_ret) == 0) {
-							fprintf(stdout, window_id_format, 
-										kids_grkids_ret[k]);
-							rootwin = kids_grkids_ret[k];
-							break;
-						}
-					}
-					XFree(w_grkids_ret);
-				} 
-				XFree(w_kids_ret);
-			}
-			XFree(w_ret);
-		}
+		/* new func in lib */
+		rootwin = find_root(dpy, scr, dpyWidth, dpyHeight);
 	}
 	/* end block */
 	
@@ -603,7 +599,7 @@ void showxlib(int width, int height, int style, char *xwin) {
 				XSetInputFocus (dpy, win, RevertToNone, CurrentTime); 
 			} 
 		}
-		usleep(950000); /* increased now that drawing is efficient */
+		usleep(990000); /* increased now that drawing is efficient */
 		
 	} 
 	cairo_surface_destroy(cs);
@@ -614,7 +610,7 @@ void showxlib(int width, int height, int style, char *xwin) {
 /**************** main *******************************************************/
 int main(int argc, char **argv) {
 	prog = argv[0];
-	char *rootwindow = NULL; /* work around * for XFCE */
+	char *rootwindow = NULL; /* work around */
 	if (argc == 2) {
 		rootwindow = argv[1];
 	}
