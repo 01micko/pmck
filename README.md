@@ -66,6 +66,6 @@ Bugs
 - may run 1 or 2 seconds behind system time and skip a second to catch up
 - can flicker at times of heavy load or on slow machines
 - may have jagged edges which may or may not be improved with an antialias setting in pmckrc.
-- may ne slow to refresh after being uncovered by another window (less than 1 second)
+- may be slow to refresh after being uncovered by another window (less than 1 second)
 
 Please report all bugs here for now.
