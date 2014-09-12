@@ -56,10 +56,12 @@ with any other WM/DE also as it overrides the internal algorithm.
 
 Extra notes
 -----------
-`pmck` now comes with an optional library. For now it is built 
-**statically** by default beacuse the shared library, `libpmdesktop.so` is
-yet to be released.
-* disclaimer: **statically** only refers to libpmdesktop. All other depends are dynamically linked
+`pmck` now comes with an optional library. It is built 
+**statically** by default, all extra code is included in `pmdesktop.h`. 
+
+The library, [pmdesktop](https://github.com/01micko/pmdesktop) is
+available, with the intent of future desktop programs to be developed.
+* disclaimer: **statically** only refers to `libpmdesktop`. All other depends are dynamically linked
 
 Bugs
 ----
