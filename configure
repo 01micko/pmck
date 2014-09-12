@@ -1,0 +1,105 @@
+#!/bin/sh
+#very simple configure script to generate Makefile
+
+#defaults
+PREFIX=/usr/local
+LIBDIR=/lib
+MANDIR=/share/man
+BUILD=
+build=static
+
+#parameters
+while [ $# != 0 ]; do
+	I=1
+	while [ $I -lt `echo $# | wc -c` ]; do
+		case $1 in
+			--prefix*) PREFIX=`echo $1|cut -d '=' -f2`;;
+			--libdir*) LIBDIR=`echo $1|cut -d '=' -f2`;;
+			--mandir*) MANDIR=`echo $1|cut -d '=' -f2`;;
+			--enable-shared*)BUILD=D_SHARED_BUILD;build=shared;;
+			-h|--help)	echo '
+  -h|--help    show this help
+  --prefix=/dir    set installation path : default /usr/local
+  --libdir=   set lib dir : default '$PREFIX'/lib, eg: /lib64
+  --enable-shared	build with shared libpmdesktop.so : default no
+  --mandir=		eg: /man, default is '$PREFIX'/share/man' 
+				exit;;
+			
+		esac
+		shift
+		I=$(($I+1))
+	done
+done
+
+echo
+echo -n "checking for gcc...	" 
+type gcc 2>&1 >/dev/null
+if [ "$?" -eq 0 ];then  echo "ok" 
+else echo -e "not found \naborting" && exit
+fi
+PM=`find /usr -type l -name libpmdesktop.so`
+if [ "$PM" ];then
+	if [ "$build" = "static" ];then
+		echo -n "ALERT:	"
+		echo "${PM##*/} found"
+		echo "Static build is disabled"
+		echo
+		build=shared
+	fi
+fi
+if [ "$build" = "shared" ];then
+	echo -n "checking for pmdesktop...	"
+	if [ "$PM" ];then  echo "ok" 
+	else echo -e "not found \naborting" && exit
+	fi
+	EXTRALIBS='-lpmdesktop'
+else
+	SHARED='
+pmdesktop.o: pmdesktop.c
+	$(CC) -o $@ $(CFLAGS) -c $^
+'
+	PMOBJ='pmdesktop.o'
+fi
+echo
+echo "======================="
+echo "prefix:	"$PREFIX"
+libdir:	"${PREFIX}${LIBDIR}"
+mandir:	"${PREFIX}${MANDIR}"
+build: $build"
+echo
+echo "If these don't look right run $0 again"
+
+cat > Makefile << _MAKE
+CC=gcc
+PREFIX=$PREFIX
+LIBDIR=\$(PREFIX)${LIBDIR}
+MANDIR=\$(PREFIX)${MANDIR}
+CFLAGS=-Wall -pedantic -std=gnu99 -g
+LIBFLAGS=-I/usr/include \`pkg-config --cflags cairo\`
+LDFLAGS=-Wall -g \`pkg-config --libs cairo\` -L\$(LIBDIR) -lX11 -lXext
+BUILD=$BUILD
+EXTRALIBS=$EXTRALIBS
+
+all: pmck
+
+pmck: pmck.o $PMOBJ
+	\$(CC) -o \$@ \$(LDFLAGS) \$(EXTRALIBS) \$^
+
+pmck.o: pmck.c
+	\$(CC) -o \$@ \$(CFLAGS) \$(LIBFLAGS) -c \$^
+${SHARED}
+install: pmck
+	-mkdir -p \$(DESTDIR)\$(PREFIX)/bin \$(DESTDIR)\$(MANDIR)/man1/
+	install -m 0755 -s pmck \$(DESTDIR)\$(PREFIX)/bin
+	install -m 0644 pmck.1 \$(DESTDIR)\$(MANDIR)/man1/pmck.1
+
+uninstall: pmck
+	-rm \$(PREFIX)/bin/pmck
+	-rm \$(MANDIR)/man1/pmck.1
+
+clean:
+	-rm -f *.o pmck
+
+distclean:
+	-rm Makefile
+_MAKE
