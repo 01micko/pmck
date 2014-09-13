@@ -35,8 +35,9 @@ Usage
 Just run `pmck` from the command line, it needs no options. It will read an rc file 
 in `~/.config/pmckrc` to set different features. There is an example rc file
 provided. This should be self explanatory. You can set the size, background
-and foreground colours and the style, 3 to choose from. You can autostart it if
-you wish. See your distro's documentation for this feature. 
+and foreground colours and the style, 4 to choose from, including plain numbers(0 and default),
+Roman numerals (1), markings only (2) or even the classic Swiss SBB face (3). 
+You can autostart it if you wish. See your distro's documentation for this feature. 
 
 On some window managers the root window is not the desktop window. In the case
 of ROX-Filer pinboard this is easily overcome by finding the child window which

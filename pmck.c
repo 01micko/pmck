@@ -260,37 +260,58 @@ float get_hrs() {
 double degrees2radians(int degrees) {
     return((double)((double)degrees * ( M_PI/180 )));
 }
-void paint_second_hand(cairo_t *cr, int w, int h) { 
+void paint_second_hand(cairo_t *cr, int w, int h, int style) { 
 	/** second */
 	get_secs();
 	struct clock_hand *second = clock_hand_create((92 * w/200), 
 										1.0, sh_r, sh_g, sh_b, secd);
 	double degs = degrees2radians(second->angle);
 	cairo_set_source_rgb(cr, second->rr, second->gg, second->bb);
-	cairo_set_line_width(cr, second->wdth);
-	cairo_rotate(cr, degs); /* angle */
-	cairo_move_to(cr, 0, -(second->lgth / 4));
-	cairo_line_to(cr, 0, second->lgth);
-	cairo_stroke(cr);
+	if (style == 3) {
+		cairo_set_line_width(cr, second->wdth);
+		cairo_rotate(cr, degs); /* angle */
+		cairo_move_to(cr, 0, -(second->lgth / 3));
+		cairo_line_to(cr, 0, (2 * second->lgth / 3));
+		cairo_stroke(cr);
+		cairo_translate(cr, 0, (2 * second->lgth / 3));
+		cairo_arc(cr, 0, 0, (second->lgth / 10), 0, 2 * M_PI);
+		cairo_fill(cr);
+	} else {
+		cairo_set_line_width(cr, second->wdth);
+		cairo_rotate(cr, degs); /* angle */
+		cairo_move_to(cr, 0, -(second->lgth / 4));
+		cairo_line_to(cr, 0, second->lgth);
+		cairo_stroke(cr);
+	}
+	
 	clock_hand_destroy(second);
 }
-void paint_big_hand(cairo_t *cr, int w, int h) {
+void paint_big_hand(cairo_t *cr, int w, int h, int style) {
 	/** minute */
 	get_mins();
 	struct clock_hand *big = clock_hand_create((87 * w/200), 
 									w/50, blh_r, blh_g, blh_b, mind);
 	double degs = degrees2radians(big->angle);
 	cairo_set_source_rgb(cr, big->rr, big->gg, big->bb);
-	cairo_set_line_width(cr, big->wdth);
-	cairo_rotate(cr, degs); /* angle */
-	cairo_move_to(cr, 0, 0);
+	
+	if (style == 3) {
+		cairo_set_line_width(cr, (w/33) );
+		cairo_rotate(cr, degs); /* angle */
+		cairo_move_to(cr, 0, -(w / 8));
+	} else {
+		cairo_set_line_width(cr, big->wdth);
+		cairo_rotate(cr, degs); /* angle */
+		cairo_move_to(cr, 0, 0);
+	}
 	cairo_line_to(cr, 0, big->lgth);
-	cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+	if (style < 3) {
+		cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+	}
 	cairo_stroke(cr);
 	cairo_arc(cr, 0, 0, w/60, 0, 2 * M_PI);
 	clock_hand_destroy(big);
 }
-void paint_little_hand(cairo_t *cr, int w, int h) {
+void paint_little_hand(cairo_t *cr, int w, int h, int style) {
 	/** hour */
 	get_hrs();
 	struct clock_hand *little = clock_hand_create((w/3), 
@@ -299,9 +320,15 @@ void paint_little_hand(cairo_t *cr, int w, int h) {
 	cairo_set_source_rgb(cr, little->rr, little->gg, little->bb);
 	cairo_set_line_width(cr, little->wdth);
 	cairo_rotate(cr, degs); /* angle */
-	cairo_move_to(cr, 0, 0);
+	if (style == 3) {
+		cairo_move_to(cr, 0, -(w / 8));
+	} else {
+		cairo_move_to(cr, 0, 0);
+	}
 	cairo_line_to(cr, 0, little->lgth);
-	cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+	if (style < 3) {
+		cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+	}
 	cairo_stroke(cr);
 	clock_hand_destroy(little);
 }
@@ -363,7 +390,7 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 		shift_three = 1 * fnt / 2;
 	}
 	/* print the numerals */
-	if (style != 2) {
+	if (style < 2) {
 		cairo_select_font_face(cr, fface, CAIRO_FONT_SLANT_NORMAL,
 				CAIRO_FONT_WEIGHT_NORMAL);
 		cairo_set_font_size(cr, fnt);
@@ -373,7 +400,7 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 	} else {
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	}
-	if (style != 2) {
+	if (style < 2) {
 		cairo_move_to(cr, (sizex/2) - (3 * fnt / 5) - shift_twlv, fnt);
 		cairo_show_text(cr, twelve);
 		cairo_move_to(cr, 
@@ -397,7 +424,11 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 				} else {
 					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 				}
-				cairo_set_line_width(cr, sizex / 50);
+				if (style == 3) {
+					cairo_set_line_width(cr, sizex / 30);
+				} else {
+					cairo_set_line_width(cr, sizex / 50);
+				}
 				cairo_rotate(cr, drgs); /* angle */
 				cairo_move_to(cr, 0, (sizex/2) - (sizex/7));
 				cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
@@ -409,29 +440,37 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 				} else {
 					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 				}
-				cairo_set_line_width(cr, sizex / 20);
-				cairo_rotate(cr, drgs); /* angle */
-				cairo_move_to(cr, 0, (sizex/2) - (sizex/7));
-				cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
-				cairo_stroke(cr);
-				if (ctype == 0) {
-					cairo_set_source_rgb(cr, bg_r, bg_g, bg_b);
+				if (style == 3) {
+					cairo_set_line_width(cr, sizex / 30);
+					cairo_rotate(cr, drgs); /* angle */
+					cairo_move_to(cr, 0, (sizex/2) - (sizex/7));
+					cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
+					cairo_stroke(cr);
 				} else {
-					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+					cairo_set_line_width(cr, sizex / 20);
+					cairo_rotate(cr, drgs); /* angle */
+					cairo_move_to(cr, 0, (sizex/2) - (sizex/7));
+					cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
+					cairo_stroke(cr);
+					if (ctype == 0) {
+						cairo_set_source_rgb(cr, bg_r, bg_g, bg_b);
+					} else {
+						cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+					}
+					cairo_set_line_width(cr, sizex / 80);
+					cairo_rotate(cr, (drgs)); /* opposite, so do it twice */
+					cairo_rotate(cr, (drgs)); 
+					cairo_move_to(cr, 0, (sizex/2) - (sizex/7));
+					cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
+					cairo_stroke(cr);
 				}
-				cairo_set_line_width(cr, sizex / 80);
-				cairo_rotate(cr, (drgs)); /* opposite, so do it twice */
-				cairo_rotate(cr, (drgs)); 
-				cairo_move_to(cr, 0, (sizex/2) - (sizex/7));
-				cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
-				cairo_stroke(cr);
 			}
 			cairo_restore(cr);
 		}
 	}
 	/** clock face markings */
 	int xint, yint;
-	if (style != 2) {
+	if (style < 2) {
 		cairo_translate(cr, sizex/2, sizey/2);
 		xint = 29;
 		yint = 31;
@@ -452,11 +491,19 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 			} else {
 				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 			}
-			cairo_set_line_width(cr, sizex / 50);
-			cairo_rotate(cr, drgs); /* angle */
-			cairo_move_to(cr, 0, (sizex/2) - (sizex/15));
-			cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
-			cairo_stroke(cr);
+			if (style == 3) {
+				cairo_set_line_width(cr, sizex / 30);
+				cairo_rotate(cr, drgs); /* angle */
+				cairo_move_to(cr, 0, (sizex/2) - (sizex/7));
+				cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
+				cairo_stroke(cr);
+			} else {
+				cairo_set_line_width(cr, sizex / 50);
+				cairo_rotate(cr, drgs); /* angle */
+				cairo_move_to(cr, 0, (sizex/2) - (sizex/15));
+				cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
+				cairo_stroke(cr);
+			}
 		} else {
 			drgs = degrees2radians(degrees);
 			if (ctype == 0) {
@@ -495,15 +542,15 @@ void paint(cairo_surface_t *cs, int sizex, int sizey, int style) {
 	/** hands */
 	/** big */
 	cairo_save(c);
-	paint_big_hand(c, sizex, sizey);
+	paint_big_hand(c, sizex, sizey, style);
 	cairo_restore(c); 
 	/** little */
 	cairo_save(c);
-	paint_little_hand(c, sizex, sizey);
+	paint_little_hand(c, sizex, sizey, style);
 	cairo_restore(c);
 	/** second */
 	cairo_save(c);
-	paint_second_hand(c, sizex, sizey);
+	paint_second_hand(c, sizex, sizey, style);
 	cairo_restore(c);
 	cairo_show_page(c);
 	cairo_destroy(c);
@@ -599,8 +646,14 @@ void showxlib(int width, int height, int style, char *xwin) {
 				XSetInputFocus (dpy, win, RevertToNone, CurrentTime); 
 			} 
 		}
-		usleep(990000); /* increased now that drawing is efficient */
-		
+		int nsec = get_secs();
+		int osec = nsec + 6;
+		while (1) { /*replaces usleep(950000)*/
+			usleep(500000);
+			if ((get_secs() == osec) || (get_secs() == 180)) {
+				break;
+			}
+		}
 	} 
 	cairo_surface_destroy(cs);
 	XFreePixmap(dpy, pix); 

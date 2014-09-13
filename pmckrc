@@ -1,6 +1,7 @@
 # config for poor man's clock (pmck)
 # comments '#' are ignored
-#style; hindu-arabic 0, roman numerals 1 or 2 strokes instead of numerals
+#style; hindu-arabic 0, roman numerals 1, 2 strokes instead of numerals or
+# 3 for a Swiss Railways Clock or SBB (the one Apple ripped off) 
 style = 2
 # size; px. THIS IS MANDATORY if you use the pmkrc file
 # must be <= 300 or >= 80
