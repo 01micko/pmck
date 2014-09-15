@@ -28,7 +28,7 @@ make install
 
 Some basic options to `configure` are provided. Run `configure --help`
 
-You will have to manually move `pmckrc` to `$XDG_CONFIG_HOME` for it to be recognised.
+You will have to manually move `pmckrc` to `$HOME/.config` for it to be recognised.
 
 Usage
 -----
