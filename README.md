@@ -47,7 +47,8 @@ with a header file `pmdesktop.h` with the funtion in `pmdesktop.c`. In the futur
 a shared library named `libpmdesktop.so` with it's static counterpart `libpmdesktop.a`
 will become available. As time permits I will utilise this library for other projects.
 So far this is tested with *JWM*, *JWM + ROX-Filer*, *Fluxbox*, *XFCE*, 
-*WindowMaker* and *KDE*.
+*WindowMaker*, *Blackbox*, *TWM*, *LXDE*, *MATE* and *KDE*.
+It works, **with issues**, in Cinnamon and Gnome.
 
 If finding the desktop fails it can be overcome by 1 single option to the 
 command line; the desktop window ID which can be found by running `xwininfo` and 
