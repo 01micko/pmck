@@ -18,7 +18,7 @@
 	#include "pmdesktop.h"
 #endif /* _SHARED_BUILD */
 
-#define THIS_VERSION "0.2"
+#define THIS_VERSION "0.3"
 #define _GNU_SOURCE
 #define CONFIG ".config/pmckrc"
 
@@ -565,6 +565,7 @@ void showxlib(int width, int height, int style, char *xwin) {
 	int scr;
 	cairo_surface_t *cs;
 	cairo_surface_t *cw;
+	static char *window_id_format = "0x%lx\n";
 	int mydepth;
     
 	if (!(dpy = XOpenDisplay(NULL))) {
@@ -585,6 +586,14 @@ void showxlib(int width, int height, int style, char *xwin) {
 	}else {
 		/* new func in lib */
 		rootwin = find_root(dpy, scr, dpyWidth, dpyHeight);
+		if (rootwin) {
+			fprintf(stdout, window_id_format, rootwin);
+		} else {
+			fprintf(stderr, "No desktop window found\n"
+					"Try \"xwininfo\" to find"
+					"the right HEX desktop ID.");
+			exit (1);
+		}
 	}
 	/* end block */
 	
