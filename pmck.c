@@ -581,8 +581,12 @@ void showxlib(int width, int height, int style, char *xwin) {
     
     /* this block sorts out the desktop window */
     if (xwin) {
-		fprintf(stdout,"xwin is %s\n",xwin); /* passed param */
-		rootwin = strtol(xwin, 0, 0);
+		if (strcmp(xwin, "-r") == 0) {
+			rootwin = RootWindow(dpy, scr);
+		} else {
+			rootwin = strtol(xwin, 0, 0);
+		}
+		fprintf(stdout, window_id_format, rootwin);
 	}else {
 		/* new func in lib */
 		rootwin = find_root(dpy, scr, dpyWidth, dpyHeight);

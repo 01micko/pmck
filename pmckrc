@@ -3,6 +3,8 @@
 #style; hindu-arabic 0, roman numerals 1, 2 strokes instead of numerals or
 # 3 for a Swiss Railways Clock or SBB (the one Apple ripped off) 
 style = 2
+#deco; clock hand decoration 0 = modern, 1 = fancy, 2 = classic, 3 = SBB
+deco = 1
 # size; px. THIS IS MANDATORY if you use the pmkrc file
 # must be <= 300 or >= 80
 size = 128
