@@ -18,7 +18,7 @@
 	#include "pmdesktop.h"
 #endif /* _SHARED_BUILD */
 
-#define THIS_VERSION "0.3"
+#define THIS_VERSION "0.4"
 #define _GNU_SOURCE
 #define CONFIG ".config/pmckrc"
 
@@ -37,6 +37,7 @@ FILE *fp;
 int size;
 int posx, posy;
 int style;
+int deco;
 
 /** default colours */
 /*background*/
@@ -56,6 +57,8 @@ double sh_r = 1.0;
 double sh_g = 0.0;
 double sh_b = 0.0;
 int AA = 0; /* CAIRO_ANTIALIAS_DEFAULT */
+
+int sleep_tick = 500000;
 
 static int test_conf() {
 	home = getenv("HOME");
@@ -89,6 +92,10 @@ void read_conf() {
 			else if (strstr(line, "style") != NULL) {
 				char *res = split_string(line);
 				style = atoi(res);
+			}
+			else if (strstr(line, "deco") != NULL) {
+				char *res = split_string(line);
+				deco = atoi(res);
 			}
 			else if (strstr(line, "size") != NULL) {
 				char *res = split_string(line);
@@ -260,14 +267,14 @@ float get_hrs() {
 double degrees2radians(int degrees) {
     return((double)((double)degrees * ( M_PI/180 )));
 }
-void paint_second_hand(cairo_t *cr, int w, int h, int style) { 
+void paint_second_hand(cairo_t *cr, int w, int h, int deco) { 
 	/** second */
 	get_secs();
 	struct clock_hand *second = clock_hand_create((92 * w/200), 
 										1.0, sh_r, sh_g, sh_b, secd);
 	double degs = degrees2radians(second->angle);
 	cairo_set_source_rgb(cr, second->rr, second->gg, second->bb);
-	if (style == 3) {
+	if (deco == 3) {
 		cairo_set_line_width(cr, second->wdth);
 		cairo_rotate(cr, degs); /* angle */
 		cairo_move_to(cr, 0, -(second->lgth / 3));
@@ -276,6 +283,18 @@ void paint_second_hand(cairo_t *cr, int w, int h, int style) {
 		cairo_translate(cr, 0, (2 * second->lgth / 3));
 		cairo_arc(cr, 0, 0, (second->lgth / 10), 0, 2 * M_PI);
 		cairo_fill(cr);
+	} else if (deco == 1) {
+		cairo_set_line_width(cr, second->wdth);
+		cairo_rotate(cr, degs); /* angle */
+		cairo_move_to(cr, 0, -(second->lgth / 3));
+		cairo_line_to(cr, 0, second->lgth);
+		cairo_move_to(cr, 0, (second->lgth / 3));
+		cairo_line_to(cr, second->lgth / 32, ((second->lgth / 3) + (second->lgth / 8)));
+		cairo_line_to(cr,   0, ((2 * second->lgth / 3) + second->lgth / 8));
+		cairo_line_to(cr, -(second->lgth / 32), ((second->lgth / 3) + (second->lgth / 8)));
+		cairo_line_to(cr, 0, (second->lgth / 3));
+		cairo_close_path(cr);
+		cairo_stroke_preserve(cr);
 	} else {
 		cairo_set_line_width(cr, second->wdth);
 		cairo_rotate(cr, degs); /* angle */
@@ -286,7 +305,7 @@ void paint_second_hand(cairo_t *cr, int w, int h, int style) {
 	
 	clock_hand_destroy(second);
 }
-void paint_big_hand(cairo_t *cr, int w, int h, int style) {
+void paint_big_hand(cairo_t *cr, int w, int h, int deco) {
 	/** minute */
 	get_mins();
 	struct clock_hand *big = clock_hand_create((87 * w/200), 
@@ -294,24 +313,38 @@ void paint_big_hand(cairo_t *cr, int w, int h, int style) {
 	double degs = degrees2radians(big->angle);
 	cairo_set_source_rgb(cr, big->rr, big->gg, big->bb);
 	
-	if (style == 3) {
+	if (deco >= 2) {
 		cairo_set_line_width(cr, (w/33) );
 		cairo_rotate(cr, degs); /* angle */
 		cairo_move_to(cr, 0, -(w / 8));
+	} else if (deco == 1) {
+		cairo_set_line_width(cr, big->wdth );
+		cairo_rotate(cr, degs); /* angle */
+		cairo_move_to(cr, 0, -(w / 8));
+		cairo_line_to(cr, -(w / 45), 0);
+		cairo_line_to(cr, 0, big->lgth);
+		cairo_line_to(cr, (w / 45), 0);
+		cairo_line_to(cr, 0, -(w / 8));
+		cairo_close_path (cr);
+		cairo_fill(cr);
 	} else {
 		cairo_set_line_width(cr, big->wdth);
 		cairo_rotate(cr, degs); /* angle */
 		cairo_move_to(cr, 0, 0);
 	}
-	cairo_line_to(cr, 0, big->lgth);
-	if (style < 3) {
+	if (deco != 1 ) {
+		cairo_line_to(cr, 0, big->lgth);
+	}
+	if ((deco == 0) || (deco == 2)) {
 		cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
 	}
-	cairo_stroke(cr);
+	if (deco != 1 ) {
+		cairo_stroke(cr);
+	}
 	cairo_arc(cr, 0, 0, w/60, 0, 2 * M_PI);
 	clock_hand_destroy(big);
 }
-void paint_little_hand(cairo_t *cr, int w, int h, int style) {
+void paint_little_hand(cairo_t *cr, int w, int h, int deco) {
 	/** hour */
 	get_hrs();
 	struct clock_hand *little = clock_hand_create((w/3), 
@@ -320,16 +353,26 @@ void paint_little_hand(cairo_t *cr, int w, int h, int style) {
 	cairo_set_source_rgb(cr, little->rr, little->gg, little->bb);
 	cairo_set_line_width(cr, little->wdth);
 	cairo_rotate(cr, degs); /* angle */
-	if (style == 3) {
+	if (deco >= 2) {
 		cairo_move_to(cr, 0, -(w / 8));
+	} else if (deco == 1) {
+		cairo_move_to(cr, 0, -(w / 10));
+		cairo_line_to(cr, -(w / 45), 0);
+		cairo_line_to(cr, 0, little->lgth);
+		cairo_line_to(cr, (w / 45), 0);
+		cairo_line_to(cr, 0, -(w / 10));
+		cairo_close_path (cr);
+		cairo_fill(cr);
 	} else {
 		cairo_move_to(cr, 0, 0);
 	}
 	cairo_line_to(cr, 0, little->lgth);
-	if (style < 3) {
+	if ((deco == 0) || (deco == 2)) {
 		cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
 	}
-	cairo_stroke(cr);
+	if (deco != 1 ) {
+		cairo_stroke(cr);
+	}
 	clock_hand_destroy(little);
 }
 void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
@@ -530,7 +573,7 @@ void paint_dial(cairo_surface_t *cs, int sizex, int sizey, int style) {
 	cairo_destroy(c);
 }
 /** this paints everything and is looped from showxlib() */
-void paint(cairo_surface_t *cs, int sizex, int sizey, int style) {
+void paint(cairo_surface_t *cs, int sizex, int sizey, int style, int deco) {
 	
 	cairo_t *c;
 	c = cairo_create(cs);
@@ -542,21 +585,21 @@ void paint(cairo_surface_t *cs, int sizex, int sizey, int style) {
 	/** hands */
 	/** big */
 	cairo_save(c);
-	paint_big_hand(c, sizex, sizey, style);
+	paint_big_hand(c, sizex, sizey, deco);
 	cairo_restore(c); 
 	/** little */
 	cairo_save(c);
-	paint_little_hand(c, sizex, sizey, style);
+	paint_little_hand(c, sizex, sizey, deco);
 	cairo_restore(c);
 	/** second */
 	cairo_save(c);
-	paint_second_hand(c, sizex, sizey, style);
+	paint_second_hand(c, sizex, sizey, deco);
 	cairo_restore(c);
 	cairo_show_page(c);
 	cairo_destroy(c);
 	/*cairo_surface_write_to_png (cs, "/tmp/test.png");*/ /* debug */
 }
-void showxlib(int width, int height, int style, char *xwin) {
+void showxlib(int width, int height, int style, int deco, char *xwin) {
 	
 	Display *dpy;
 	Window rootwin;
@@ -581,14 +624,10 @@ void showxlib(int width, int height, int style, char *xwin) {
     
     /* this block sorts out the desktop window */
     if (xwin) {
-		if (strcmp(xwin, "-r") == 0) {
-			rootwin = RootWindow(dpy, scr);
-		} else {
-			rootwin = strtol(xwin, 0, 0);
-		}
-		fprintf(stdout, window_id_format, rootwin);
+		fprintf(stdout,"xwin is %s\n",xwin); /* passed param */
+		rootwin = strtol(xwin, 0, 0);
 	}else {
-		/* new func in lib */
+		/* see pmdesktop.c */
 		rootwin = find_root(dpy, scr, dpyWidth, dpyHeight);
 		if (rootwin) {
 			fprintf(stdout, window_id_format, rootwin);
@@ -602,6 +641,10 @@ void showxlib(int width, int height, int style, char *xwin) {
 	/* end block */
 	
 	XSetWindowAttributes attr;
+	attr.colormap = XCreateColormap(dpy, XDefaultRootWindow(dpy), 
+								DefaultVisual(dpy, scr), AllocNone);
+	attr.background_pixel = 0;
+	attr.border_pixel = 0;
 	attr.override_redirect = True; /* no deco */
 	
 	if ((posx == 0) && (posy == 0)){
@@ -615,7 +658,9 @@ void showxlib(int width, int height, int style, char *xwin) {
 	}
 	
 	win = XCreateWindow(dpy, rootwin, posx, posy, width, height, 0, mydepth, 
-			InputOutput, DefaultVisual(dpy, scr), CWOverrideRedirect, &attr);
+			InputOutput, DefaultVisual(dpy, scr), 
+			CWOverrideRedirect | CWColormap | CWBackPixel | CWBorderPixel, 
+			&attr);
 	XStoreName(dpy, win, prog);
 	XSelectInput(dpy, win, ExposureMask|KeyPressMask|ButtonPressMask);
 	XMapWindow(dpy, win);
@@ -643,8 +688,8 @@ void showxlib(int width, int height, int style, char *xwin) {
 	XFlush(dpy);
 	int run = 1;
 	while (run) { 
-		paint(csbuf, width, height, style); 
-		cairo_paint (cspaint); 
+		paint(csbuf, width, height, style, deco); 
+		cairo_paint (cspaint);
 		while (XPending (dpy)) { 
 			XNextEvent(dpy, &e); 
 			if (e.type == KeyPress) { 
@@ -659,16 +704,18 @@ void showxlib(int width, int height, int style, char *xwin) {
 				XSetInputFocus (dpy, win, RevertToNone, CurrentTime); 
 			} 
 		}
+			
 		int nsec = get_secs();
 		int osec = nsec + 6;
-		while (1) { /*replaces usleep(950000)*/
-			usleep(500000);
+		while (1) {
+			usleep(sleep_tick);
 			if ((get_secs() == osec) || (get_secs() == 180)) {
 				break;
 			}
 		}
 	} 
 	cairo_surface_destroy(cs);
+	cairo_surface_destroy(cw);
 	XFreePixmap(dpy, pix); 
 	XCloseDisplay(dpy); 
 }
@@ -693,7 +740,7 @@ int main(int argc, char **argv) {
 	}
 	fprintf(stdout,"%s-%s has started\n", prog, THIS_VERSION);
 	hsize = size; vsize = size;
-	showxlib(hsize, vsize, style, rootwindow);
+	showxlib(hsize, vsize, style, deco, rootwindow);
 	
 	return 0;
 }
