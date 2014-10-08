@@ -36,6 +36,7 @@ Just run `pmck` from the command line, it needs no options. It will read an rc f
 in `~/.config/pmckrc` to set different features. There is an example rc file
 provided. This should be self explanatory. You can set the size, background
 and foreground colours and the style, 4 to choose from, including plain numbers(0 and default),
+*new* "deco" 0 to 3, for modern, classic, fancy and SBB hand styles
 Roman numerals (1), markings only (2) or even the classic Swiss SBB face (3). 
 You can autostart it if you wish. See your distro's documentation for this feature. 
 
