@@ -18,7 +18,7 @@
 	#include "pmdesktop.h"
 #endif /* _SHARED_BUILD */
 
-#define THIS_VERSION "0.4"
+#define THIS_VERSION "0.5"
 #define _GNU_SOURCE
 #define CONFIG ".config/pmckrc"
 
@@ -302,7 +302,6 @@ void paint_second_hand(cairo_t *cr, int w, int h, int deco) {
 		cairo_line_to(cr, 0, second->lgth);
 		cairo_stroke(cr);
 	}
-	
 	clock_hand_destroy(second);
 }
 void paint_big_hand(cairo_t *cr, int w, int h, int deco) {
@@ -412,25 +411,34 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 	
 	/** clock face numerals */
 	char *fface; /* a bit of glam for different styles */
-	fface = "DejaVu Sans";
-	char *twelve, *six, *nine, *three;
+	
+	char *twelve, *six, *nine, *three, *one, *two, *four, *five, *seven, *eight, *ten, *eleven;
 	int shift_twlv, shift_six, shift_three;
-	twelve = "12";
-	six = "6";
-	nine = "9";
-	three = "3";
-	shift_twlv = 0;
-	shift_six = 0;
-	shift_three = 0;
+	if (style == 0) {
+		fface = "DejaVu Sans";
+		twelve = "12";
+		six = "6";
+		nine = "9";
+		three = "3";
+		shift_twlv = 0;
+		shift_six = 0;
+		shift_three = 0;
+	}
 	if (style == 1) {
+		fnt = sizex / 8;
 		fface = "serif";
-		twelve = "XII";
-		six = "VI";
-		nine = "IX";
+		one = "I";
+		two = "II";
 		three = "III";
-		shift_twlv = fnt / 9;
-		shift_six = fnt / 3;
-		shift_three = 1 * fnt / 2;
+		four = "IV";
+		five = "V";
+		six = "VI";
+		seven = "VII";
+		eight = "VIII";
+		nine = "IX";
+		ten = "X";
+		eleven = "XI";
+		twelve = "XII";
 	}
 	/* print the numerals */
 	if (style < 2) {
@@ -443,7 +451,7 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 	} else {
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	}
-	if (style < 2) {
+	if (style == 0) {
 		cairo_move_to(cr, (sizex/2) - (3 * fnt / 5) - shift_twlv, fnt);
 		cairo_show_text(cr, twelve);
 		cairo_move_to(cr, 
@@ -454,6 +462,38 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 		cairo_show_text(cr, three);
 		cairo_move_to(cr, fnt / 4, (sizey/2) + (4 * fnt / 11));
 		cairo_show_text(cr, nine);
+	} else if (style == 1) {
+		cairo_translate(cr, sizex/2, sizey/2);
+		int z;
+		double offby;
+		char *numeral;
+		for (z = 0; z < 60; z = z + 5) {
+			int degrees = (z * 6) - 90;
+			cairo_save(cr);
+			if (z == 0) { numeral = twelve; offby = - (3 * fnt / 4); }
+			if (z == 5) { numeral = one; offby =  - (fnt / 8); }
+			if (z == 10) { numeral = two; offby = - (fnt / 3); }
+			if (z == 15) { numeral = three; offby = - (fnt / 2); }
+			if (z == 20) { numeral = four; offby = - (fnt / 2); }
+			if (z == 25) { numeral = five; offby = - (fnt / 3); }
+			if (z == 30) { numeral = six; offby = - (2 * fnt / 3); }
+			if (z == 35) { numeral = seven; offby = - (3 * fnt / 4); }
+			if (z == 40) { numeral = eight; offby = - fnt; }
+			if (z == 45) { numeral = nine; offby = - (2 * fnt / 5); }
+			if (z == 50) { numeral = ten; offby = 0 - (fnt / 3); }
+			if (z == 55) { numeral = eleven; offby = 0 - (3 * fnt / 4); }
+			drgs = degrees2radians(degrees);
+			if (ctype == 0) {
+				cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
+			} else {
+				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+			}
+			cairo_rotate(cr, drgs);
+			cairo_move_to(cr, (sizex/2) - fnt, offby);
+			cairo_rotate(cr,degrees2radians(90));
+			cairo_show_text(cr, numeral);
+			cairo_restore(cr);
+		}
 	} else {
 		cairo_translate(cr, sizex/2, sizey/2);
 		int g;
@@ -513,17 +553,17 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 	}
 	/** clock face markings */
 	int xint, yint;
-	if (style < 2) {
+	if (style == 0) {
 		cairo_translate(cr, sizex/2, sizey/2);
 		xint = 29;
 		yint = 31;
 	}
-	int f = 0; /* initialise */
+	int f = 0;
 	for (f = 0; f < 60; f++) {
 		int degrees = f * 6;
 		cairo_save(cr);
-		if (((f == 15) || (f == 30) || (f == 45) ||
-					(f == xint) || (f == yint) || (f == 0))) {
+		if ((f == 15) || (f == 30) || (f == 45) ||
+					(f == xint) || (f == yint) || (f == 0)) {
 			continue;
 		} 
 		else if ((f == 5) || (f == 10) || (f == 20) || (f == 25) ||
@@ -540,6 +580,8 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 				cairo_move_to(cr, 0, (sizex/2) - (sizex/7));
 				cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
 				cairo_stroke(cr);
+			} else if (style == 1) {
+				break;
 			} else {
 				cairo_set_line_width(cr, sizex / 50);
 				cairo_rotate(cr, drgs); /* angle */
@@ -557,7 +599,11 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 			cairo_set_line_width(cr, sizex / 80);
 			cairo_rotate(cr, drgs); /* angle */
 			cairo_move_to(cr, 0, (sizex/2) - (sizex/20));
-			cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
+			if (style == 1) {
+				cairo_line_to(cr, 0, (sizex/2) - (sizex/20));
+			} else {
+				cairo_line_to(cr, 0, (sizex/2) - (sizex/45));
+			}
 			cairo_stroke(cr);
 		}
 		cairo_restore(cr);
