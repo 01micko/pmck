@@ -477,11 +477,11 @@ void paint_face(cairo_t *cr, int sizex, int sizey, int style, int ctype) {
 			if (z == 20) { numeral = four; offby = - (fnt / 2); }
 			if (z == 25) { numeral = five; offby = - (fnt / 3); }
 			if (z == 30) { numeral = six; offby = - (2 * fnt / 3); }
-			if (z == 35) { numeral = seven; offby = - (3 * fnt / 4); }
+			if (z == 35) { numeral = seven; offby = - (4 * fnt / 5); }
 			if (z == 40) { numeral = eight; offby = - fnt; }
 			if (z == 45) { numeral = nine; offby = - (2 * fnt / 5); }
-			if (z == 50) { numeral = ten; offby = 0 - (fnt / 3); }
-			if (z == 55) { numeral = eleven; offby = 0 - (3 * fnt / 4); }
+			if (z == 50) { numeral = ten; offby = - (fnt / 3); }
+			if (z == 55) { numeral = eleven; offby =  - (2 * fnt / 3); }
 			drgs = degrees2radians(degrees);
 			if (ctype == 0) {
 				cairo_set_source_rgb(cr, bd_r, bd_g, bd_b);
