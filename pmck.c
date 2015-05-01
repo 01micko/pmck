@@ -12,13 +12,14 @@
 #include <math.h>
 #include <assert.h>
 #include <time.h>
+#include <sys/time.h>
 #ifdef _SHARED_BUILD
 	#include <pmdesktop.h>
 #else
 	#include "pmdesktop.h"
 #endif /* _SHARED_BUILD */
 
-#define THIS_VERSION "0.5"
+#define THIS_VERSION "0.6"
 #define _GNU_SOURCE
 #define CONFIG ".config/pmckrc"
 
@@ -57,8 +58,6 @@ double sh_r = 1.0;
 double sh_g = 0.0;
 double sh_b = 0.0;
 int AA = 0; /* CAIRO_ANTIALIAS_DEFAULT */
-
-int sleep_tick = 500000;
 
 static int test_conf() {
 	home = getenv("HOME");
@@ -627,6 +626,7 @@ void paint(cairo_surface_t *cs, int sizex, int sizey, int style, int deco) {
 	/** face */
 	cairo_save(c);
 	paint_face(c, sizex, sizey, style, 0);
+	/* cairo_surface_write_to_png (cs, "/tmp/test.png"); */
 	cairo_restore(c);
 	/** hands */
 	/** big */
@@ -645,13 +645,14 @@ void paint(cairo_surface_t *cs, int sizex, int sizey, int style, int deco) {
 	cairo_destroy(c);
 	/*cairo_surface_write_to_png (cs, "/tmp/test.png");*/ /* debug */
 }
-long long time_stamp() {
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	unsigned long long milliseconds =
-    (unsigned long long)(tv.tv_sec) * 1000 +
-    (unsigned long long)(tv.tv_usec) / 1000;
-    return milliseconds;
+void request_expose(Display *dpy, Window win) {
+	XEvent e;
+	e.xexpose.type = Expose;
+	e.xexpose.serial = NextRequest(dpy);
+	e.xexpose.display = dpy;
+	e.xexpose.window = win;
+	XSendEvent(dpy, win, False, ExposureMask, &e);
+	XFlush(dpy);
 }
 void showxlib(int width, int height, int style, int deco, char *xwin) {
 	
@@ -659,6 +660,7 @@ void showxlib(int width, int height, int style, int deco, char *xwin) {
 	Window rootwin;
 	Window win;
 	XEvent e;
+	
 	int scr;
 	cairo_surface_t *cs;
 	cairo_surface_t *cw;
@@ -718,6 +720,8 @@ void showxlib(int width, int height, int style, int deco, char *xwin) {
 	XStoreName(dpy, win, prog);
 	XSelectInput(dpy, win, ExposureMask|KeyPressMask|ButtonPressMask);
 	XMapWindow(dpy, win);
+	
+	
 	Pixmap pix = XCreatePixmap(dpy, win, width, height, 1);
 	GC gc_pix = XCreateGC(dpy, pix, 0, 0);
 	XFillRectangle (dpy, pix, gc_pix, 0, 0, width, height); 
@@ -739,33 +743,48 @@ void showxlib(int width, int height, int style, int deco, char *xwin) {
 				cairo_xlib_surface_get_drawable(cw), ShapeSet); 
 				
 	XLowerWindow(dpy, win);
+	
+	int x11_fd;
+	fd_set in_fds;
+	struct timeval tv;
+	
+	x11_fd = ConnectionNumber(dpy);
 	XFlush(dpy);
 	int run = 1;
 	while (run) { 
-		paint(csbuf, width, height, style, deco); 
-		cairo_paint (cspaint);
-		while (XPending (dpy)) { 
-			XNextEvent(dpy, &e); 
-			if (e.type == KeyPress) { 
-				char buf[128] = {0}; 
-				KeySym keysym; 
-				XLookupString(&e.xkey, buf, sizeof(buf), &keysym, NULL); 
-				if (keysym == XK_q) { 
-					run = 0;
-					break;
-				} 
-			} else if (e.type == ButtonPress) { 
-				XSetInputFocus (dpy, win, RevertToNone, CurrentTime); 
-			} 
-		}
-			
-		int nsec = get_secs();
-		int osec = nsec + 6;
-		while (1) {
-			usleep(sleep_tick);
-			if ((get_secs() == osec) || (get_secs() == 180)) {
-				break;
+		/* fire it every 1 second */
+		tv.tv_usec = 0;
+		tv.tv_sec = 1;
+		/* reset fds */
+		FD_ZERO(&in_fds);
+		FD_SET(x11_fd, &in_fds);
+		
+		if (select(x11_fd+1, &in_fds, 0, 0, &tv)) {
+			/* event */
+			while (XPending (dpy)) { 
+				XNextEvent(dpy, &e); 
+				if (e.type == Expose) {
+					paint(csbuf, width, height, style, deco); 
+					cairo_paint (cspaint);
+					/* printf("expose\n"); */
+				} else if (e.type == KeyPress) { 
+					char buf[128] = {0}; 
+					KeySym keysym; 
+					XLookupString(&e.xkey, buf, sizeof(buf), &keysym, NULL); 
+					if (keysym == XK_q) { 
+						run = 0;
+						break;
+					} 
+				} else if (e.type == ButtonPress) { 
+					XSetInputFocus (dpy, win, RevertToNone, CurrentTime); 
+				} else {
+					/* printf("unknown event: %d\n", e.type); */
+				}
 			}
+		} else {
+			/* timer */
+			/* printf("timer fires\n"); */
+			request_expose(dpy, win);
 		}
 	} 
 	cairo_surface_destroy(cs);
