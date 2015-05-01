@@ -645,6 +645,14 @@ void paint(cairo_surface_t *cs, int sizex, int sizey, int style, int deco) {
 	cairo_destroy(c);
 	/*cairo_surface_write_to_png (cs, "/tmp/test.png");*/ /* debug */
 }
+long long time_stamp() {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	unsigned long long milliseconds =
+    (unsigned long long)(tv.tv_sec) * 1000 +
+    (unsigned long long)(tv.tv_usec) / 1000;
+    return milliseconds;
+}
 void showxlib(int width, int height, int style, int deco, char *xwin) {
 	
 	Display *dpy;

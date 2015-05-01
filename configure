@@ -3,8 +3,6 @@
 
 #defaults
 PREFIX=/usr/local
-LIBDIR=/lib
-MANDIR=/share/man
 BUILD=
 build=static
 
@@ -16,13 +14,16 @@ while [ $# != 0 ]; do
 			--prefix*) PREFIX=`echo $1|cut -d '=' -f2`;;
 			--libdir*) LIBDIR=`echo $1|cut -d '=' -f2`;;
 			--mandir*) MANDIR=`echo $1|cut -d '=' -f2`;;
-			--enable-shared*)BUILD=D_SHARED_BUILD;build=shared;;
+			--enable-shared*)BUILD=-D_SHARED_BUILD;build=shared;;
+			--enable-static*)BUILD='';build=static;FLAG=1;;
 			-h|--help)	echo '
-  -h|--help    show this help
-  --prefix=/dir    set installation path : default /usr/local
-  --libdir=   set lib dir : default '$PREFIX'/lib, eg: /lib64
+  -h|--help    		show this help
+  --prefix=/dir    	set installation path : default /usr/local
+  --libdir=   		set lib dir : default '$PREFIX'/lib, eg: /usr/lib64
   --enable-shared	build with shared libpmdesktop.so : default no
-  --mandir=		eg: /man, default is '$PREFIX'/share/man' 
+  --enable-static	build with static pmdesktop.c : default yes
+	useful if libpmdesktop.so is installed to force static linking
+  --mandir=		eg: /usr/man, default is '$PREFIX'/share/man' 
 				exit;;
 			
 		esac
@@ -30,6 +31,8 @@ while [ $# != 0 ]; do
 		I=$(($I+1))
 	done
 done
+[ -z "$LIBDIR" ] && LIBDIR=${PREFIX}/lib
+[ -z "$MANDIR" ] && MANDIR=${PREFIX}/share/man
 
 echo
 echo -n "checking for gcc...	" 
@@ -39,20 +42,28 @@ else echo -e "not found \naborting" && exit
 fi
 PM=`find /usr -type l -name libpmdesktop.so`
 if [ "$PM" ];then
-	if [ "$build" = "static" ];then
+	if [ "$build" = "static" -a -z "$FLAG" ];then
 		echo -n "ALERT:	"
 		echo "${PM##*/} found"
 		echo "Static build is disabled"
 		echo
 		build=shared
+		BUILD=-D_SHARED_BUILD
 	fi
 fi
 if [ "$build" = "shared" ];then
-	echo -n "checking for pmdesktop...	"
+	echo -n "checking for libpmdesktop...	"
 	if [ "$PM" ];then  echo "ok" 
-	else echo -e "not found \naborting" && exit
-	fi
 	EXTRALIBS='-lpmdesktop'
+	else echo -e "not found, please install libpmdesktop \nenabling static pmdesktop"
+	SHARED='
+pmdesktop.o: pmdesktop.c
+	$(CC) -o $@ $(CFLAGS) -c $^
+'
+	PMOBJ='pmdesktop.o'
+	build=static
+	BUILD=''
+	fi
 else
 	SHARED='
 pmdesktop.o: pmdesktop.c
@@ -60,11 +71,12 @@ pmdesktop.o: pmdesktop.c
 '
 	PMOBJ='pmdesktop.o'
 fi
+
 echo
 echo "======================="
 echo "prefix:	"$PREFIX"
-libdir:	"${PREFIX}${LIBDIR}"
-mandir:	"${PREFIX}${MANDIR}"
+libdir:	"${LIBDIR}"
+mandir:	"${MANDIR}"
 build: $build"
 echo
 echo "If these don't look right run $0 again"
@@ -72,30 +84,34 @@ echo "If these don't look right run $0 again"
 cat > Makefile << _MAKE
 CC=gcc
 PREFIX=$PREFIX
-LIBDIR=\$(PREFIX)${LIBDIR}
-MANDIR=\$(PREFIX)${MANDIR}
+LIBDIR=${LIBDIR}
+MANDIR=${MANDIR}
 CFLAGS=-Wall -pedantic -std=gnu99 -g
 LIBFLAGS=-I/usr/include \`pkg-config --cflags cairo\`
-LDFLAGS=-Wall -g \`pkg-config --libs cairo\` -L\$(LIBDIR) -lX11 -lXext
+LDFLAGS=-Wall -g -L\$(LIBDIR) -lX11 -lXext -lcairo
 BUILD=$BUILD
 EXTRALIBS=$EXTRALIBS
 
 all: pmck
 
 pmck: pmck.o $PMOBJ
-	\$(CC) -o \$@ \$(LDFLAGS) \$(EXTRALIBS) \$^
+	\$(CC) -o \$@ \$^ \$(LDFLAGS) \$(EXTRALIBS)
 
 pmck.o: pmck.c
-	\$(CC) -o \$@ \$(CFLAGS) \$(LIBFLAGS) -c \$^
+	\$(CC) -o \$@ \$(CFLAGS) \$(LIBFLAGS) \$(BUILD) -c \$^
 ${SHARED}
 install: pmck
-	-mkdir -p \$(DESTDIR)\$(PREFIX)/bin \$(DESTDIR)\$(MANDIR)/man1/
+	install -d -m 0755 \$(DESTDIR)\$(PREFIX)/bin \$(DESTDIR)\$(MANDIR)/man1/
+	install -d -m 0755 \$(DESTDIR)\$(PREFIX)/share/pmck
 	install -m 0755 -s pmck \$(DESTDIR)\$(PREFIX)/bin
 	install -m 0644 pmck.1 \$(DESTDIR)\$(MANDIR)/man1/pmck.1
+	install -m 0644 pmckrc \$(DESTDIR)\$(PREFIX)/share/pmck/pmckrc
 
 uninstall: pmck
 	-rm \$(PREFIX)/bin/pmck
 	-rm \$(MANDIR)/man1/pmck.1
+	-rm -r \$(PREFIX)/share/pmck/
+	\$(info Manual cleanup of your ~/.config dir  may be necessary)
 
 clean:
 	-rm -f *.o pmck
