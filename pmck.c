@@ -743,14 +743,15 @@ void showxlib(int width, int height, int style, int deco, char *xwin) {
 				cairo_xlib_surface_get_drawable(cw), ShapeSet); 
 				
 	XLowerWindow(dpy, win);
+	XFlush(dpy);
+	int run = 1;
 	
 	int x11_fd;
 	fd_set in_fds;
 	struct timeval tv;
-	
+	/* ask for expose so we get immediate expose upon entry */
+	request_expose (dpy, win);
 	x11_fd = ConnectionNumber(dpy);
-	XFlush(dpy);
-	int run = 1;
 	while (run) { 
 		/* fire it every 1 second */
 		tv.tv_usec = 0;
@@ -766,7 +767,7 @@ void showxlib(int width, int height, int style, int deco, char *xwin) {
 				if (e.type == Expose) {
 					paint(csbuf, width, height, style, deco); 
 					cairo_paint (cspaint);
-					/* printf("expose\n"); */
+					//printf("expose\n");
 				} else if (e.type == KeyPress) { 
 					char buf[128] = {0}; 
 					KeySym keysym; 
@@ -778,12 +779,13 @@ void showxlib(int width, int height, int style, int deco, char *xwin) {
 				} else if (e.type == ButtonPress) { 
 					XSetInputFocus (dpy, win, RevertToNone, CurrentTime); 
 				} else {
-					/* printf("unknown event: %d\n", e.type); */
+					//printf("unknown event: %d\n", e.type);
+					;;
 				}
 			}
 		} else {
 			/* timer */
-			/* printf("timer fires\n"); */
+			//printf("timer fires\n");
 			request_expose(dpy, win);
 		}
 	} 
